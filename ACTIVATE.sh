@@ -9,3 +9,7 @@ export CROSS_COMPILE=arm-none-eabi-
 
 # For the user-space applications build:
 export CROSS_COMPILE_APPS=arm-uclinuxeabi-
+
+# Define the MCU architecture
+export MCU=A2F
+
