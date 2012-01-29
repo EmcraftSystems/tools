@@ -4,10 +4,8 @@ TOOLS_PATH=$INSTALL_ROOT/tools
 CROSS_PATH=$TOOLS_PATH/$TOOLCHAIN/bin
 export PATH=$CROSS_PATH:$TOOLS_PATH/bin:$PATH
 
-# For kernel and U-Boot build:
-export CROSS_COMPILE=arm-none-eabi-
-
-# For the user-space applications build:
+# Path to cross-tools
+export CROSS_COMPILE=arm-uclinuxeabi-
 export CROSS_COMPILE_APPS=arm-uclinuxeabi-
 
 # Define the MCU architecture
