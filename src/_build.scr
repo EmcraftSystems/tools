@@ -1,4 +1,5 @@
 #! /usr/bin/env bash
+set -x
 set -e
 umask 022
 exec < /dev/null
@@ -43,7 +44,7 @@ do
   tar -zxpf ../${package}.tgz
   cd $package 
   case $package in
-    zlib-1.2.3) (AR='ar rc'; ./configure --prefix=${HOST_LIBS} --host=i686-pc-linux-gnu --disable-nls); make -j4; make install;;  #
+    zlib-1.2.3) (AR='ar rc'; ./configure --prefix=${HOST_LIBS}); make -j4; make install;;  #
     gmp-2011.03) (CFLAGS='-g -O2'; ./configure $COMMON_FLAGS --enable-cxx ); make -j4; make install; make check;;
     mpfr-2010q1) ./configure $COMMON_FLAGS --target=arm-uclinuxeabi --with-gmp=${HOST_LIBS}; make -j4; make install; make check;;
     ppl-0.10.2)  ./configure $COMMON_FLAGS --target=arm-uclinuxeabi --with-libgmp-prefix=${HOST_LIBS}; make -j4; make install;;
