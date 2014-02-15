@@ -8,3 +8,7 @@ export MCU=VF6
 
 eval `eldk-switch.sh -r 5.3 armv7a`
 
+export CXXFLAGS="$CXXFLAGS -I$INSTALL_ROOT/target/root/usr/include"
+export LDFLAGS="$LDFLAGS -L$INSTALL_ROOT/target/root/usr/lib"
+export CFLAGS="$CFLAGS -I$INSTALL_ROOT/target/root/usr/include"
+export CPPFLAGS="$CPPLAGS -I$INSTALL_ROOT/target/root/usr/include"
