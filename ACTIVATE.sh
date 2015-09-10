@@ -7,7 +7,8 @@ export PATH=$TOOLS_PATH/bin:$CROSS_PATH:$PATH
 # Path to cross-tools
 export CROSS_COMPILE=arm-uclinuxeabi-
 export CROSS_COMPILE_APPS=arm-uclinuxeabi-
-
+# ARCH for kernel build
+export ARCH=arm
 # Define the MCU architecture
 export MCU=A2F
 
