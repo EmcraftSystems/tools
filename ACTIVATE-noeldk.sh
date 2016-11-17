@@ -1,0 +1,19 @@
+export YOCTO_ROOT=/opt/poky/1.8.1
+
+export INSTALL_ROOT=`pwd`
+
+export ELDK_ROOTFS=$YOCTO_ROOT/rootfs-qte-sdk
+export MQX_TOOLCHAIN_DIR=/usr/local/arm-2012
+export HOST_PYTHON_EXE_PATH=/usr/bin/python
+
+# Define the MCU architecture
+export MCU=VF6
+
+source $YOCTO_ROOT/environment-setup-cortexa5hf-vfp-neon-poky-linux-gnueabi
+unset PYTHONHOME
+unset CCACHE_PATH
+
+export CXXFLAGS="$CXXFLAGS -I$INSTALL_ROOT/target/root/usr/include"
+export LDFLAGS="$LDFLAGS -L$INSTALL_ROOT/target/root/usr/lib"
+export CFLAGS="$CFLAGS -I$INSTALL_ROOT/target/root/usr/include"
+export CPPFLAGS="$CPPLAGS -I$INSTALL_ROOT/target/root/usr/include"
