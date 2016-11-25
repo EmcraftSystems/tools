@@ -1,8 +1,8 @@
 export YOCTO_ROOT=/opt/poky/1.8.1
+export IPK_REPO=$YOCTO_ROOT/packages
 
 export INSTALL_ROOT=`pwd`
 
-export ELDK_ROOTFS=$YOCTO_ROOT/rootfs-qte-sdk
 export MQX_TOOLCHAIN_DIR=/usr/local/arm-2012
 export HOST_PYTHON_EXE_PATH=/usr/bin/python
 
