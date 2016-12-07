@@ -9,6 +9,8 @@ export PATH=$TOOLS_PATH/bin:$CROSS_PATH:$ARMV7_CROSS_PATH:$PATH
 export CROSS_COMPILE=arm-uclinuxeabi-
 export CROSS_COMPILE_APPS=arm-uclinuxeabi-
 
+export ARCH=arm
+
 # Define the MCU architecture
 export MCU=K70
 
