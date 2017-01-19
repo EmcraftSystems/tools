@@ -7,7 +7,7 @@ export MQX_TOOLCHAIN_DIR=/usr/local/arm-2012
 export HOST_PYTHON_EXE_PATH=/usr/bin/python
 
 # Define the MCU architecture
-export MCU=VF6
+# export MCU=VF6
 
 source $YOCTO_ROOT/environment-setup-cortexa5hf-vfp-neon-poky-linux-gnueabi
 unset PYTHONHOME
