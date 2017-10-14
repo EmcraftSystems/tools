@@ -1,16 +1,12 @@
-TOOLCHAIN=arm-2010q1
+TOOLCHAIN=arm-v7-linux-uclibceabi
 export INSTALL_ROOT=`pwd`
 TOOLS_PATH=$INSTALL_ROOT/tools
 CROSS_PATH=$TOOLS_PATH/$TOOLCHAIN/bin
-ARMV7_CROSS_PATH=$TOOLS_PATH/arm-v7-linux-uclibceabi/bin
-export PATH=$TOOLS_PATH/bin:$CROSS_PATH:$ARMV7_CROSS_PATH:$PATH
+export PATH=$TOOLS_PATH/bin:$CROSS_PATH:$PATH
 
-# Path to cross-tools
-export CROSS_COMPILE=arm-uclinuxeabi-
-export CROSS_COMPILE_APPS=arm-uclinuxeabi-
+export CROSS_COMPILE=arm-v7-linux-uclibceabi-
+export CROSS_COMPILE_APPS=arm-v7-linux-uclibceabi-
 
 export ARCH=arm
-
-# Define the MCU architecture
-export MCU=K70
+export MCU=LPC
 
