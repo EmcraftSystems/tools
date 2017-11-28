@@ -3,7 +3,8 @@ export IPK_REPO=$YOCTO_ROOT/packages
 
 export INSTALL_ROOT=`pwd`
 
-export MQX_TOOLCHAIN_DIR=/usr/local/arm-2012
+export MQX_TOOLCHAIN_DIR=/usr/local/gcc-arm-none-eabi-4_8-2014q1
+export TOOLCHAIN_ROOTDIR=$MQX_TOOLCHAIN_DIR
 export HOST_PYTHON_EXE_PATH=/usr/bin/python
 
 # Define the MCU architecture
