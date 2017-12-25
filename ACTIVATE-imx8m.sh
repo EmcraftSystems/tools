@@ -5,8 +5,6 @@ export INSTALL_ROOT=`pwd`
 
 export HOST_PYTHON_EXE_PATH=/usr/bin/python
 
-export MCU=IMX8M_NXPEVK
-
 source $YOCTO_ROOT/environment-setup-aarch64-poky-linux
 unset PYTHONHOME
 unset CCACHE_PATH
