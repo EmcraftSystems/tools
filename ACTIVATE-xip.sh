@@ -9,7 +9,10 @@ export CROSS_COMPILE=arm-none-eabi-
 export PATH=$TOOLS_PATH/$TOOLCHAIN/bin:$PATH
 
 TOOLCHAIN_APPS=arm-v7-linux-uclibceabi
-export CROSS_COMPILE_APPS=arm-v7-linux-uclibceabi-
+CROSS_COMPILE_APPS_NAME=arm-v7-linux-uclibceabi
+export CROSS_COMPILE_APPS=${CROSS_COMPILE_APPS_NAME}-
 export PATH=$TOOLS_PATH/$TOOLCHAIN_APPS/bin:$PATH
+
+export TOOLS_LIBS=$TOOLS_PATH/$TOOLCHAIN_APPS/$CROSS_COMPILE_APPS_NAME/sysroot
 
 export PATH=$TOOLS_PATH/bin:$PATH
