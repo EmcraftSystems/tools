@@ -20,7 +20,7 @@ case "${MCU}" in
     IMXRT105X_NXPEVK)
 	FLASHLOADER_PATH=$INSTALL_ROOT/tools/Flashloader_i.MXRT1050_GA/Flashloader_RT1050_1.1
 	SDPHOST_DEFAULT="${FLASHLOADER_PATH}/Tools/sdphost/linux/i386/sdphost"
-	BLHOST_DEFUALT="${FLASHLOADER_PATH}/Tools/blhost/linux/i386/blhost"
+	BLHOST_DEFAULT="${FLASHLOADER_PATH}/Tools/blhost/linux/i386/blhost"
 	FLASHLOADER_BIN="${FLASHLOADER_PATH}/Tools/mfgtools-rel/Profiles/MXRT105X/OS Firmware/ivt_flashloader.bin"
 	PROJECT_DEFAULT=rootfs_flash
 	RFS_DEFAULT=jffs2
