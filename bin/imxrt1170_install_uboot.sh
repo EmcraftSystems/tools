@@ -24,21 +24,21 @@ usage() {
 				in linux-cm-imxrt-3.0.x distribution:
 				$FLASHLOADER_BIN
 
-	-p blhost		specify alternative path to the blhost utility; default
+	-b blhost		specify alternative path to the blhost utility; default
 				is one from the MCUXpresso Secure Provisioning Tool v9 installation:
 				$BLHOST
 
-	-S			install the SPL image from current distibution:
+	-S			install the SPL image from current distribution:
 				$SPL_DEFAULT
 
 	-s SPL.flexspi		install the SPL image from an alternative location
 
-	-U			install the main U-Boot image from current distibution:
+	-U			install the main U-Boot image from current distribution:
 				$SPL_DEFAULT
 
 	-u u-boot.img		install the main U-Boot image from an alternative location
 
-	-I			install the Linux uImage from current distibution:
+	-I			install the Linux uImage from current distribution:
 				$UIMAGE_DEFAULT
 
 	-i uImage		install the Linux uImage from an alternative location
@@ -47,7 +47,7 @@ usage() {
 
 	-v			enable verbose
 
-	-h			dispaly this help
+	-h			display this help
 
 EOF
     exit $1
