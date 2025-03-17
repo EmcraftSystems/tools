@@ -3,7 +3,7 @@
 # script to install a bootable image (U-Boot) to an external memory (QSPI Flash) on the IMXRT1170 target
 #
 
-BLHOST="/opt/nxp/MCUX_Provi_v9/bin/_internal/tools/spsdk/blhost"
+BLHOST="/opt/nxp/MCUX_Provi_v10/bin/_internal/tools/spsdk/blhost"
 FLASHLOADER_BIN=$INSTALL_ROOT/tools/bin/unsigned_MIMXRT1176_flashloader.bin
 
 SPL_DEFAULT=$INSTALL_ROOT/u-boot/SPL.flexspi
@@ -25,7 +25,7 @@ usage() {
 				$FLASHLOADER_BIN
 
 	-b blhost		specify alternative path to the blhost utility; default
-				is one from the MCUXpresso Secure Provisioning Tool v9 installation:
+				is one from the MCUXpresso Secure Provisioning Tool v10 installation:
 				$BLHOST
 
 	-S			install the SPL image from current distribution:
