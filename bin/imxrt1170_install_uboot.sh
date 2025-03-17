@@ -34,7 +34,7 @@ usage() {
 	-s SPL.flexspi		install the SPL image from an alternative location
 
 	-U			install the main U-Boot image from current distribution:
-				$SPL_DEFAULT
+				$TPL_DEFAULT
 
 	-u u-boot.img		install the main U-Boot image from an alternative location
 
