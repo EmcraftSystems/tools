@@ -94,6 +94,17 @@ case "${_MACHINE}" in
 	;;
 esac
 
+# If the hardcoded vendor paths above don't exist on this host (e.g. because
+# the user installed blhost/sdphost via SPSDK / pip rather than via NXP's
+# MCUXpresso Secure Provisioning or Flashloader package), fall back to PATH.
+# The -b / -s overrides still take precedence below.
+if [ ! -x "${BLHOST_DEFAULT}" ]; then
+    BLHOST_DEFAULT="$(command -v blhost 2>/dev/null)"
+fi
+if [ -n "${SDPHOST_DEFAULT}" ] && [ ! -x "${SDPHOST_DEFAULT}" ]; then
+    SDPHOST_DEFAULT="$(command -v sdphost 2>/dev/null)"
+fi
+
 BLHOST=${BLHOST_DEFAULT}
 SDPHOST=${SDPHOST_DEFAULT}
 
