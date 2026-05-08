@@ -23,9 +23,15 @@ if ! getent passwd "$USER_UID" >/dev/null 2>&1; then
 fi
 BUILDER_USER="$(getent passwd "$USER_UID" | cut -d: -f1)"
 
-if [ ! -f /work/ACTIVATE.sh ]; then
+# Resolve where the BSP tree is mounted. run.sh bind-mounts $ROOT both at
+# /work (legacy / customer convention) and at the host path itself
+# (BSP_HOST_ROOT, set in env), so INSTALL_ROOT matches between host and
+# container and buildroot's local.mk doesn't churn on env switches.
+# Fall back to /work for direct `docker run -v $(pwd):/work` invocations.
+ACTIVATE_DIR="${BSP_HOST_ROOT:-/work}"
+if [ ! -f "$ACTIVATE_DIR/ACTIVATE.sh" ]; then
     cat >&2 <<EOF
-ERROR: /work does not contain ACTIVATE.sh.
+ERROR: $ACTIVATE_DIR does not contain ACTIVATE.sh.
 
 Mount the extracted release tree at /work, for example:
   docker run --rm -it -v "\$(pwd):/work" <image>
@@ -46,9 +52,9 @@ export HOME="/home/${BUILDER_USER}"
 # passing KBUILD_BUILD_USER / KBUILD_BUILD_HOST via `docker run -e ...` or
 # directly on the make command line.
 exec sudo -u "$BUILDER_USER" -g "$BUILDER_GROUP" \
-     --preserve-env=HOME,TERM,KBUILD_BUILD_USER,KBUILD_BUILD_HOST,MCU,BUILDROOT_DEFCONFIG \
+     --preserve-env=HOME,TERM,KBUILD_BUILD_USER,KBUILD_BUILD_HOST,MCU,BUILDROOT_DEFCONFIG,BSP_HOST_ROOT \
      bash -c '
-        cd /work || exit 1
+        cd "${BSP_HOST_ROOT:-/work}" || exit 1
         # Stash the user command before sourcing ACTIVATE.sh: bash -c "...
         # exec \"$@\"" forwards the user command into $@, and ACTIVATE.sh
         # reads $1 as the MCU selector, so an unstashed call would feed e.g.

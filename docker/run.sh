@@ -230,10 +230,12 @@ unset -f _collect_external_symlinks
 
 exec docker run --rm "${TTY_ARGS[@]}" \
     -v "$ROOT:/work" \
+    -v "$ROOT:$ROOT" \
     "${SYMLINK_MOUNTS[@]}" \
     "${USB_ARGS[@]}" \
     -e USER_UID="$(id -u)" \
     -e USER_GID="$(id -g)" \
+    -e BSP_HOST_ROOT="$ROOT" \
     "${ENV_ARGS[@]}" \
     -w "$WORKDIR" \
     "$IMAGE" \
