@@ -64,6 +64,22 @@ come before the command. Inheriting `$MCU` from the host shell works too:
 MCU=IMXRT117X_NXPEVK ./tools/docker/run.sh make
 ```
 
+Pair `-m` / `--mcu` with `-s` / `--sdk` to select a buildroot SDK
+(validated by file existence under `buildroot/configs/`); ACTIVATE.sh's
+positional convention requires both, so `--sdk` alone is rejected.
+`$BUILDROOT_DEFCONFIG` from the host shell is also forwarded:
+
+```
+./tools/docker/run.sh --mcu IMXRT117X_NXPEVK --sdk arm_cortexm_sdk_lite_defconfig make
+MCU=IMXRT117X_NXPEVK BUILDROOT_DEFCONFIG=arm_cortexm_sdk_defconfig \
+    ./tools/docker/run.sh make
+```
+
+When neither flag is passed, the container inherits both from
+`.activate-defaults` at the BSP root (bind-mounted at `/work`), so a
+host-side `source ACTIVATE.sh <MCU> <defconfig>` carries through to the
+container automatically.
+
 The wrapper:
 
 - Bind-mounts the release tree at `/work` read-write.

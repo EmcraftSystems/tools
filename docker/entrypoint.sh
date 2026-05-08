@@ -46,7 +46,7 @@ export HOME="/home/${BUILDER_USER}"
 # passing KBUILD_BUILD_USER / KBUILD_BUILD_HOST via `docker run -e ...` or
 # directly on the make command line.
 exec sudo -u "$BUILDER_USER" -g "$BUILDER_GROUP" \
-     --preserve-env=HOME,TERM,KBUILD_BUILD_USER,KBUILD_BUILD_HOST,MCU \
+     --preserve-env=HOME,TERM,KBUILD_BUILD_USER,KBUILD_BUILD_HOST,MCU,BUILDROOT_DEFCONFIG \
      bash -c '
         cd /work || exit 1
         # Stash the user command before sourcing ACTIVATE.sh: bash -c "...
@@ -56,7 +56,7 @@ exec sudo -u "$BUILDER_USER" -g "$BUILDER_GROUP" \
         _saved=("$@")
         set --
         # shellcheck disable=SC1091
-        source ./ACTIVATE.sh ${MCU:+"$MCU"} >/dev/null || exit 1
+        source ./ACTIVATE.sh ${MCU:+"$MCU"} ${BUILDROOT_DEFCONFIG:+"$BUILDROOT_DEFCONFIG"} >/dev/null || exit 1
         set -- "${_saved[@]}"
         unset _saved
 
@@ -82,6 +82,7 @@ exec sudo -u "$BUILDER_USER" -g "$BUILDER_GROUP" \
             printf "\n${G}================================================================${R}\n"
             printf "${G} Emcraft Linux-CM build environment${R}\n"
             printf "   Target:  %s\n" "${MCU:-(not set)}"
+            printf "   SDK:     %s\n" "${BUILDROOT_DEFCONFIG:-tools/ (legacy)}"
             printf "   Release: %s\n" "${release_version:-unknown}"
             printf "\n Build kernel + rootfs (cd to a project, e.g. projects/rootfs):\n"
             printf "   make                       full build (kernel + apps + initramfs)\n"

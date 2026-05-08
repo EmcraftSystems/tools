@@ -4,17 +4,23 @@
 # and the caller's UID/GID preserved.
 #
 # Usage from anywhere inside the release tree:
-#   ./tools/docker/run.sh                              # interactive shell
+#   ./tools/docker/run.sh                              # interactive shell, inherits .activate-defaults
 #   ./tools/docker/run.sh make                         # build the current directory
 #   ./tools/docker/run.sh make -C projects/rootfs
-#   ./tools/docker/run.sh --mcu MAAXBOARD_RT make      # one-shot target override
+#   ./tools/docker/run.sh --mcu MAAXBOARD_RT make      # one-shot MCU override
+#   ./tools/docker/run.sh --mcu IMXRT117X_NXPEVK --sdk arm_cortexm_sdk_lite_defconfig make
 #   MCU=MAAXBOARD_RT ./tools/docker/run.sh make        # same via env var
 #
 # Flags (must precede the command; use `--` to end flag parsing explicitly):
-#   -m, --mcu MCU    Select MCU target. Validated by ACTIVATE.sh inside the
-#                    container; overrides any inherited $MCU.
-#   --build          Force a rebuild of the image and exit; do not run
-#                    any command.
+#   -m, --mcu MCU         Select MCU target. Validated by ACTIVATE.sh inside the
+#                         container; overrides any inherited $MCU.
+#   -s, --sdk DEFCONFIG   Select a buildroot SDK by defconfig name (e.g.
+#                         arm_cortexm_sdk_lite_defconfig). Requires --mcu (or
+#                         MCU=...); overrides any inherited $BUILDROOT_DEFCONFIG.
+#                         When neither --mcu nor --sdk is passed, the container
+#                         inherits both from .activate-defaults at the BSP root.
+#   --build               Force a rebuild of the image and exit; do not run
+#                         any command.
 #
 # Env vars:
 #   NO_AUTO_BUILD    Don't auto-build the image (neither when missing
@@ -47,6 +53,19 @@ while [ $# -gt 0 ]; do
             MCU="${1#--mcu=}"
             shift
             ;;
+        -s|--sdk|--buildroot-defconfig)
+            [ $# -ge 2 ] || { echo "ERROR: $1 requires an argument" >&2; exit 1; }
+            BUILDROOT_DEFCONFIG="$2"
+            shift 2
+            ;;
+        --sdk=*)
+            BUILDROOT_DEFCONFIG="${1#--sdk=}"
+            shift
+            ;;
+        --buildroot-defconfig=*)
+            BUILDROOT_DEFCONFIG="${1#--buildroot-defconfig=}"
+            shift
+            ;;
         --build)
             BUILD_ONLY=1
             shift
@@ -60,6 +79,15 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+
+# ACTIVATE.sh's positional convention is MCU first, defconfig second; we
+# can't pass the second without the first. Require --mcu (or MCU=...)
+# whenever a buildroot SDK is requested.
+if [ -n "${BUILDROOT_DEFCONFIG:-}" ] && [ -z "${MCU:-}" ]; then
+    echo "ERROR: --sdk requires --mcu (or MCU=...)." >&2
+    echo "       Pass both, or omit both to inherit from .activate-defaults." >&2
+    exit 1
+fi
 
 . "$HERE/_release_version.sh"
 release_version=$(release_version_from_manifest "$ROOT/_MANIFEST")
@@ -172,15 +200,21 @@ ENV_ARGS=()
 if [ -n "${MCU:-}" ]; then
     ENV_ARGS+=(-e "MCU=$MCU")
 fi
+if [ -n "${BUILDROOT_DEFCONFIG:-}" ]; then
+    ENV_ARGS+=(-e "BUILDROOT_DEFCONFIG=$BUILDROOT_DEFCONFIG")
+fi
 
-# If any tools/ entry is a symlink pointing outside the release tree (e.g.
-# tools/<sdk> -> /usr/local/<sdk> in a dev setup), the /work bind mount
-# alone leaves the symlink dangling inside the container. Bind-mount each
-# such target at the same absolute path so the symlink resolves
-# identically inside vs outside.
+# If a release-tree entry is a symlink pointing outside $ROOT (e.g.
+# tools/<sdk> -> /usr/local/<sdk>, or a top-level dev symlink like
+# buildroot -> /home/.../buildroot), the /work bind mount alone leaves
+# the symlink dangling inside the container. Bind-mount each such target
+# at the same absolute path so the symlink resolves identically inside
+# vs outside. Walk both the BSP root and tools/ to catch both cases.
 SYMLINK_MOUNTS=()
-if [ -d "$ROOT/tools" ]; then
-    for entry in "$ROOT/tools"/*; do
+_collect_external_symlinks() {
+    local dir="$1"
+    [ -d "$dir" ] || return 0
+    for entry in "$dir"/*; do
         [ -L "$entry" ] || continue
         target=$(readlink -f "$entry") || continue
         [ -e "$target" ] || continue
@@ -189,7 +223,10 @@ if [ -d "$ROOT/tools" ]; then
         esac
         SYMLINK_MOUNTS+=(-v "$target:$target")
     done
-fi
+}
+_collect_external_symlinks "$ROOT"
+_collect_external_symlinks "$ROOT/tools"
+unset -f _collect_external_symlinks
 
 exec docker run --rm "${TTY_ARGS[@]}" \
     -v "$ROOT:/work" \
