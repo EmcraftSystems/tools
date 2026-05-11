@@ -96,13 +96,18 @@ suffix=""
 [ "$WITH_INSTALLER" = "1" ] && suffix="-installer"
 IMAGE="emcraft/linux-cm-build${release_version:+:$release_version}${suffix}"
 
+# Sidecar marker is per-variant — installer and non-installer images
+# have independent layer histories and one's rebuild shouldn't fool
+# the other into thinking its inputs are still fresh.
+MARKER="$HERE/.image-built-at${suffix}"
+
 build_image() {
     echo "Building image: $IMAGE" >&2
     (cd "$HERE" && docker build --build-arg WITH_INSTALLER="$WITH_INSTALLER" -t "$IMAGE" .)
-    # Sidecar marker: written on every successful build so we can detect
-    # stale inputs later. We can't use the image's Created timestamp because
-    # a no-op rebuild (all layers cached) keeps the same SHA + Created.
-    touch "$HERE/.image-built-at"
+    # Written on every successful build so we can detect stale inputs
+    # later. We can't use the image's Created timestamp because a no-op
+    # rebuild (all layers cached) keeps the same SHA + Created.
+    touch "$MARKER"
 }
 
 if ! command -v docker >/dev/null 2>&1; then
@@ -136,7 +141,7 @@ fi
 # build. Set NO_AUTO_BUILD=1 to opt out (mtimes can lie after `git checkout`
 # or `cp` without -p).
 if [ -z "${NO_AUTO_BUILD:-}" ]; then
-    marker="$HERE/.image-built-at"
+    marker="$MARKER"
     if [ ! -f "$marker" ]; then
         image_epoch=$(date -d "$(docker image inspect "$IMAGE" --format '{{.Created}}')" +%s 2>/dev/null || echo 0)
         if [ "$image_epoch" -gt 0 ]; then
