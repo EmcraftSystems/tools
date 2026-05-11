@@ -14,12 +14,20 @@ USER_UID="${USER_UID:-1000}"
 USER_GID="${USER_GID:-1000}"
 
 if ! getent group "$USER_GID" >/dev/null 2>&1; then
-    groupadd -g "$USER_GID" builder
+    # The Dockerfile renames the stock UID/GID-1000 group to "builder",
+    # so on non-1000 callers we need a non-colliding name.
+    new_group="builder"
+    getent group "$new_group" >/dev/null 2>&1 && new_group="builder_${USER_GID}"
+    groupadd -g "$USER_GID" "$new_group"
+    unset new_group
 fi
 BUILDER_GROUP="$(getent group "$USER_GID" | cut -d: -f1)"
 
 if ! getent passwd "$USER_UID" >/dev/null 2>&1; then
-    useradd -m -u "$USER_UID" -g "$USER_GID" -s /bin/bash builder
+    new_user="builder"
+    getent passwd "$new_user" >/dev/null 2>&1 && new_user="builder_${USER_UID}"
+    useradd -m -u "$USER_UID" -g "$USER_GID" -s /bin/bash "$new_user"
+    unset new_user
 fi
 BUILDER_USER="$(getent passwd "$USER_UID" | cut -d: -f1)"
 
