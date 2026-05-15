@@ -69,10 +69,17 @@ fi
 export ARCH=arm
 export MCU="$_REQUESTED_MCU"
 
-{
+# Skip the rewrite when content is unchanged so the file's ownership and
+# mtime survive sourcing this script as a different uid (e.g. root inside
+# a sudo'd installer container against a host-owned BSP tree).
+_new_defaults=$({
     echo "MCU=$_REQUESTED_MCU"
     [ -n "$_REQUESTED_DEFCONFIG" ] && echo "BUILDROOT_DEFCONFIG=$_REQUESTED_DEFCONFIG"
-} > "$_DEFAULTS_FILE"
+})
+if [ ! -f "$_DEFAULTS_FILE" ] || [ "$(cat "$_DEFAULTS_FILE" 2>/dev/null)" != "$_new_defaults" ]; then
+    printf '%s\n' "$_new_defaults" > "$_DEFAULTS_FILE"
+fi
+unset _new_defaults
 
 # Single toolchain (buildroot-built FDPIC GCC) drives kernel, U-Boot, and
 # userspace apps. Bare-metal targets need -mno-fdpic -fno-pic -no-pie in
