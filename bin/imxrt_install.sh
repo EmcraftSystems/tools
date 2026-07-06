@@ -226,7 +226,14 @@ do
 	I) [ -n "$UIMAGE_IMG" ] && usage 128 || UIMAGE_IMG=$UIMAGE_DEFAULT ;;
 	p) { [ -n "$UIMAGE_IMG" ] && [ -n "$RFS_IMG" ]; } || [ -n "$PROJECT" ] && usage 128 || PROJECT=${OPTARG}
 	   UIMAGE_DEFAULT=$INSTALL_ROOT/projects/${PROJECT}/${PROJECT}.uImage
-	   if [ -n "$RFST" ]; then  RFST__=${RFST}; else RFST__=${RFS_DEFAULT}; fi
+	   if [ -n "$RFST" ]; then
+	       RFST__=${RFST}
+	   else
+	       # No -t: derive the fstype from the project Makefile (FLASHFS_TYPE, per-MCU).
+	       RFST__=$(make -C "$INSTALL_ROOT/projects/${PROJECT}" MCU="$MCU" -pq 2>/dev/null \
+		   | sed -n 's/^FLASHFS_TYPE[[:space:]]*:*=[[:space:]]*//p' | head -1)
+	       [ -z "$RFST__" ] && RFST__=${RFS_DEFAULT}
+	   fi
 	   RFSIMAGE_DEFAULT=$INSTALL_ROOT/projects/${PROJECT}/${PROJECT}.${RFST__}
 	   if [ "$RFST__" = "none" ]; then RFSIMAGE_DEFAULT=""; fi
 	   ;;
