@@ -19,7 +19,8 @@ ENV LANG=C.UTF-8
 # under /work/tools/bin/ (mkimage, fdpichdr).
 RUN dpkg --add-architecture i386
 
-# Host build deps for kernel 6.12, U-Boot 2025.04, buildroot, and rfs-builder.
+# Host build deps for kernel 6.12, U-Boot 2025.04, buildroot, rfs-builder, and
+# the flash-filesystem image tools (mtd-utils: mkfs.jffs2 / mkfs.ubifs / ubinize).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         bash \
         libc6:i386 \
@@ -47,6 +48,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libtool-bin \
         locales \
         make \
+        mtd-utils \
         nano \
         patch \
         perl \
