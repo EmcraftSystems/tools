@@ -218,12 +218,9 @@ do
 	b) BLHOST=$OPTARG ;;
 	d) SDPHOST=$OPTARG ;;
 	f) FLASHLOADER_BIN=$OPTARG ;;
-	a) [ -n "$UIMAGE_IMG$RFS_IMG$SPL_IMG$TPL_IMG" ] && usage 128
-	   SPL_IMG=$SPL_DEFAULT TPL_IMG=$TPL_DEFAULT UIMAGE_IMG=$UIMAGE_DEFAULT
-	   if [ -n "$RFSIMAGE_DEFAULT" ]; then RFS_IMG=$RFSIMAGE_DEFAULT; fi
-	   ;;
+	a) INSTALL_ALL=1 ;;
 	i) [ -n "$UIMAGE_IMG" ] && usage 128 || UIMAGE_IMG=$OPTARG ;;
-	I) [ -n "$UIMAGE_IMG" ] && usage 128 || UIMAGE_IMG=$UIMAGE_DEFAULT ;;
+	I) INSTALL_UIMAGE=1 ;;
 	p) { [ -n "$UIMAGE_IMG" ] && [ -n "$RFS_IMG" ]; } || [ -n "$PROJECT" ] && usage 128 || PROJECT=${OPTARG}
 	   UIMAGE_DEFAULT=$INSTALL_ROOT/projects/${PROJECT}/${PROJECT}.uImage
 	   if [ -n "$RFST" ]; then
@@ -238,12 +235,7 @@ do
 	   if [ "$RFST__" = "none" ]; then RFSIMAGE_DEFAULT=""; fi
 	   ;;
 	r) [ -n "$RFS_IMG" ] && usage 128 || RFS_IMG=$OPTARG ;;
-	R) [ -n "$RFS_IMG" ] && usage 128
-	   if [ -z "$RFSIMAGE_DEFAULT" ]; then
-	       echo "no rootfs image configured; use -p and -t to specify project and fstype" >&2
-	       usage 1
-	   fi
-	   RFS_IMG=$RFSIMAGE_DEFAULT ;;
+	R) INSTALL_RFS=1 ;;
 	s) [ -n "$SPL_IMG" ] && usage 128
 	   if [ "$SPL_DEFAULT" != "UNSUPPORTED" ]; then
 	       SPL_IMG=$OPTARG
@@ -269,6 +261,30 @@ do
 	*) echo "$(basename "$0"): Invalid option '$OPTARG'" >&2 ; usage 128 ;;
 	esac
 done
+
+# The image defaults (-a for all, and the per-image -I / -R) are resolved here,
+# after option parsing, so they reflect the final -p / -t selection regardless
+# of the order the options were given. Each is mutually exclusive with its
+# explicit-path counterpart (-i / -r / ...).
+if [ -n "$INSTALL_ALL" ]; then
+    [ -n "$UIMAGE_IMG$RFS_IMG$SPL_IMG$TPL_IMG" ] && usage 128
+    [ "$SPL_DEFAULT" != "UNSUPPORTED" ] && SPL_IMG=$SPL_DEFAULT
+    TPL_IMG=$TPL_DEFAULT
+    UIMAGE_IMG=$UIMAGE_DEFAULT
+    [ -n "$RFSIMAGE_DEFAULT" ] && RFS_IMG=$RFSIMAGE_DEFAULT
+fi
+if [ -n "$INSTALL_UIMAGE" ]; then
+    [ -n "$UIMAGE_IMG" ] && usage 128
+    UIMAGE_IMG=$UIMAGE_DEFAULT
+fi
+if [ -n "$INSTALL_RFS" ]; then
+    [ -n "$RFS_IMG" ] && usage 128
+    if [ -z "$RFSIMAGE_DEFAULT" ]; then
+        echo "no rootfs image configured; use -p and -t to specify project and fstype" >&2
+        usage 1
+    fi
+    RFS_IMG=$RFSIMAGE_DEFAULT
+fi
 
 [ -n "$SPL_IMG" ] && [ ! -f "$SPL_IMG" ] && echo "can't find image $SPL_IMG" && usage 1;
 [ -n "$TPL_IMG" ] && [ ! -f "$TPL_IMG" ] && echo "can't find image $TPL_IMG" && usage 1;
