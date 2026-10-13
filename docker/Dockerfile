@@ -19,8 +19,9 @@ ENV LANG=C.UTF-8
 # under /work/tools/bin/ (mkimage, fdpichdr).
 RUN dpkg --add-architecture i386
 
-# Host build deps for kernel 6.12, U-Boot 2025.04, buildroot, rfs-builder, and
-# the flash-filesystem image tools (mtd-utils: mkfs.jffs2 / mkfs.ubifs / ubinize).
+# Host build deps for kernel 6.12, U-Boot 2025.04, buildroot, rfs-builder,
+# the flash-filesystem image tools (mtd-utils: mkfs.jffs2 / mkfs.ubifs / ubinize),
+# and the i.MX RT1170 Cortex-M4 firmware (cmake, arm-none-eabi GCC and newlib).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         bash \
         libc6:i386 \
@@ -30,12 +31,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
         bzip2 \
         ca-certificates \
+        cmake \
         cpio \
         device-tree-compiler \
         file \
         findutils \
         flex \
         gawk \
+        gcc-arm-none-eabi \
         gettext \
         git \
         gzip \
@@ -44,6 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgmp-dev \
         libmpc-dev \
         libncurses-dev \
+        libnewlib-arm-none-eabi \
         libssl-dev \
         libtool-bin \
         locales \
