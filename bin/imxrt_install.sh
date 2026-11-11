@@ -51,7 +51,6 @@ case "${_MCU}" in
     imxrt1050|imxrt1060)
 	SDPHOST_DEFAULT="${FLASHLOADER_PATH}/Tools/sdphost/linux/i386/sdphost"
 	BLHOST_DEFAULT="${FLASHLOADER_PATH}/Tools/blhost/linux/i386/blhost"
-	PROJECT_DEFAULT=rootfs_flash
 	RFS_DEFAULT=jffs2
 	;;
     imxrt1170)
@@ -316,6 +315,21 @@ fi
 if [ -n "$RFS_IMG" ]; then
     if [ ! -f "$RFS_IMG" ]; then
 	echo "can't find rootfs image $RFS_IMG"; usage 1;
+    fi
+fi
+
+# The kernel's erase must end where the root filesystem starts: always on the
+# RT1050/RT1060, whose U-Boot reads a fixed-size kernel, elsewhere with -R.
+if [ -n "$UIMAGE_IMG" ]; then
+    case "${_MCU}" in
+	imxrt1050|imxrt1060) _kernel_limit=1 ;;
+	*) _kernel_limit=${RFS_IMG:+1} ;;
+    esac
+    if [ -n "$_kernel_limit" ] && \
+       [ $((QSPI_UIMAGE_ADDR + QSPI_UIMAGE_SIZE)) -gt $((QSPI_RFSIMAGE_ADDR)) ]; then
+	echo "kernel image $UIMAGE_IMG does not fit below the rootfs at" \
+	     "${QSPI_RFSIMAGE_ADDR}; build it with FLASHFS_TYPE set" >&2
+	exit 1
     fi
 fi
 
