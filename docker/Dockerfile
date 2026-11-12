@@ -92,13 +92,13 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # When on, the layer pulls in the SPSDK CLI (blhost / sdphost) plus the
 # host-side libs SPSDK needs to talk to USB (libusb / libhidapi / libftdi1)
 # so imxrt_install.sh works inside the container. blhost covers RT1170 and
-# sdphost covers RT1050 / RT1060. Installed into /opt/spsdk-venv to avoid
+# sdphost covers RT1050 / RT1060; dfu-util drives the RT1170 EVK USB installer. Installed into /opt/spsdk-venv to avoid
 # PEP 668 conflicts with the system Python; imxrt_install.sh resolves them
 # via PATH thanks to its hardcoded-NXP-vendor-path fallback.
 ARG WITH_INSTALLER=0
 RUN if [ "$WITH_INSTALLER" = "1" ]; then \
         apt-get update && apt-get install -y --no-install-recommends \
-            libusb-1.0-0 libhidapi-libusb0 libftdi1-2 python3-venv && \
+            libusb-1.0-0 libhidapi-libusb0 libftdi1-2 python3-venv dfu-util && \
         rm -rf /var/lib/apt/lists/* && \
         python3 -m venv /opt/spsdk-venv && \
         /opt/spsdk-venv/bin/pip install --no-cache-dir --upgrade pip && \
