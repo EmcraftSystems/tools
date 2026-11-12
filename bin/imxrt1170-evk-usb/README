@@ -1,0 +1,16 @@
+U-Boot that imxrt_install.sh loads over USB to write the FlexSPI NOR flash
+of the i.MX RT1170 EVK. It runs from RAM and is never written to the board.
+
+  SPL.sdp         loaded by the boot ROM with blhost load-image
+  u-boot-usb.img  loaded by SPL over USB DFU; it exposes the NOR regions
+                  spl, u-boot, kernel and rootfs as DFU alternates
+
+Built from https://github.com/EmcraftSystems/u-boot-imx, commit
+11999bbc522edb0781d99fd076288cdafbc0bc81, with:
+
+  make imxrt1170-evk-usb_defconfig && make
+  cp SPL SPL.sdp && cp u-boot.img u-boot-usb.img
+
+sha256:
+2590a082930fcc25eda34aa2722263d5962910e51e2cb2ba50e22120499291b1  SPL.sdp
+04cefc9204642124dece9913f4936496ca335996f42e174ac06d06ca765b9071  u-boot-usb.img

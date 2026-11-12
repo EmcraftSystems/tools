@@ -70,6 +70,7 @@ case "${_MACHINE}" in
 	QSPI_RFSIMAGE_SIZE=0x380000
 	;;
     imxrt1170_nxpevk)
+	USB_INSTALLER_DIR=$INSTALL_ROOT/tools/bin/imxrt1170-evk-usb
 	QSPI_SPL_ADDR=0x30000000
 	QSPI_TPL_ADDR=0x30010000
 	QSPI_UIMAGE_ADDR=0x30080000
@@ -106,6 +107,18 @@ fi
 
 BLHOST=${BLHOST_DEFAULT}
 SDPHOST=${SDPHOST_DEFAULT}
+DFU_UTIL=${DFU_UTIL:-$(command -v dfu-util 2>/dev/null)}
+
+# U-Boot loaded over USB writes the images; the flashloader is used with -f,
+# and on the machines that have no USB installer.
+if [ -n "${USB_INSTALLER_DIR}" ]; then
+    USB_SPL=${USB_INSTALLER_DIR}/SPL.sdp
+    USB_TPL=${USB_INSTALLER_DIR}/u-boot-usb.img
+    USB_INSTALL=1
+fi
+USB_SPL_ID=1fc9:0151
+USB_TPL_ID=1fc9:0152
+USB_UIMAGE_ALT_SIZE=0xf80000
 
 UIMAGE_DEFAULT=$INSTALL_ROOT/projects/${PROJECT_DEFAULT}/${PROJECT_DEFAULT}.uImage
 if [ "${RFS_DEFAULT}" != "none" ]; then
@@ -121,8 +134,10 @@ usage() {
      Usage: $(basename "$0") [-p project] [-t fstype] [options]
 
      Options:
-	-f flashloader.bin	specify alternative path to the flashloader.bin file;
-				default is ${FLASHLOADER_BIN:-not defined}
+	-f flashloader.bin	install with the NXP flashloader at this path instead
+				of U-Boot over USB; the flashloader is always used on
+				machines with no USB installer. Default path is
+				${FLASHLOADER_BIN:-not defined}
 
 	-b blhost		specify alternative path to the blhost utility; default
 				is ${BLHOST_DEFAULT:-not defined}
@@ -158,6 +173,10 @@ usage() {
 
 	-v			enable verbose
 
+     The USB installer runs dfu-util from PATH, or from \$DFU_UTIL. Extra
+     dfu-util arguments, such as -p <bus-port> to pick one board, go in
+     \$DFU_UTIL_ARGS.
+
 	-h			display this help
 
 EOF
@@ -191,6 +210,79 @@ install_images() {
 }
 
 # shellcheck disable=SC2086
+wait_dfu_alt() {
+    _n=0
+    while [ $_n -lt 30 ]; do
+	$DFU_UTIL ${DFU_UTIL_ARGS} -d "$1" -l 2>/dev/null | grep -q "name=\"$2\"" && return 0
+	_n=$((_n + 1))
+	sleep 1
+    done
+    echo "no DFU device $1 with alternate '$2' appeared" >&2
+    return 1
+}
+
+# dfu_run <log> <dfu-util args...>: dfu-util's output is shown only on failure
+# shellcheck disable=SC2086
+dfu_run() {
+    _log=$1
+    shift
+    $DFU_UTIL ${DFU_UTIL_ARGS} "$@" >"$_log" 2>&1 && return 0
+    cat "$_log" >&2
+    return 1
+}
+
+# dfu_write_verify <id> <alt> <file> <label>: write, then read the region back
+dfu_write_verify() {
+    echo "writing $4 ..."
+    dfu_run "$_tmp/log" -d "$1" -a "$2" -D "$3" || return 1
+    rm -f "$_tmp/readback"
+    dfu_run "$_tmp/log" -d "$1" -a "$2" -U "$_tmp/readback" || return 1
+    cmp -n "$(stat --printf="%s" "$3")" "$3" "$_tmp/readback" >/dev/null || {
+	echo "read-back of $4 differs from the file" >&2
+	return 1
+    }
+}
+
+install_images_usb() {
+    _tmp=$(mktemp -d) || return 1
+    _rc=0
+    install_images_usb_ || _rc=1
+    rm -rf "$_tmp"
+    return $_rc
+}
+
+# shellcheck disable=SC2086
+install_images_usb_() {
+    echo "starting U-Boot over USB ..."
+    ${BLHOST} ${rom_connect} -- load-image "${USB_SPL}" >"$_tmp/log" 2>&1 || {
+	cat "$_tmp/log" >&2
+	return 1
+    }
+    wait_dfu_alt ${USB_SPL_ID} u-boot && \
+    dfu_run "$_tmp/log" -d ${USB_SPL_ID} -a u-boot -D "${USB_TPL}" && \
+    dfu_run "$_tmp/log" -d ${USB_SPL_ID} -a 0 -e && \
+    wait_dfu_alt ${USB_TPL_ID} kernel || return 1
+
+    if [ -n "$SPL_IMG" ]; then
+	dfu_write_verify ${USB_TPL_ID} spl "$SPL_IMG" "$SPL_IMG" || return 1
+    fi
+    if [ -n "$TPL_IMG" ]; then
+	dfu_write_verify ${USB_TPL_ID} u-boot "$TPL_IMG" "$TPL_IMG" || return 1
+    fi
+    if [ -n "$UIMAGE_IMG" ]; then
+	dfu_write_verify ${USB_TPL_ID} kernel "$UIMAGE_IMG" "$UIMAGE_IMG" || return 1
+    fi
+    if [ -n "$RFS_IMG" ]; then
+	# Fill the rest of the window with 0xFF: nothing of an older rootfs remains
+	tr '\000' '\377' </dev/zero | head -c $((QSPI_RFSIMAGE_SIZE)) >"$_tmp/rootfs"
+	dd if="$RFS_IMG" of="$_tmp/rootfs" conv=notrunc 2>/dev/null
+	dfu_write_verify ${USB_TPL_ID} rootfs "$_tmp/rootfs" "$RFS_IMG" || return 1
+    fi
+    dfu_run "$_tmp/log" -d ${USB_TPL_ID} -a 0 -e || return 1
+    echo "done; set the boot mode to QSPI flash and reset the board"
+}
+
+# shellcheck disable=SC2086
 configure_mem_imxrt10xx() {
     echo "starting flashloader ..."
     $SDPHOST ${rom_connect} -- error-status && \
@@ -216,7 +308,7 @@ do
 	h) usage 0;;
 	b) BLHOST=$OPTARG ;;
 	d) SDPHOST=$OPTARG ;;
-	f) FLASHLOADER_BIN=$OPTARG ;;
+	f) FLASHLOADER_BIN=$OPTARG; USB_INSTALL= ;;
 	a) INSTALL_ALL=1 ;;
 	i) [ -n "$UIMAGE_IMG" ] && usage 128 || UIMAGE_IMG=$OPTARG ;;
 	I) INSTALL_UIMAGE=1 ;;
@@ -288,7 +380,15 @@ fi
 [ -n "$SPL_IMG" ] && [ ! -f "$SPL_IMG" ] && echo "can't find image $SPL_IMG" && usage 1;
 [ -n "$TPL_IMG" ] && [ ! -f "$TPL_IMG" ] && echo "can't find image $TPL_IMG" && usage 1;
 
-if [ ! -f "$FLASHLOADER_BIN" ]; then
+if [ -n "$USB_INSTALL" ]; then
+    for _f in "$USB_SPL" "$USB_TPL"; do
+	[ -f "$_f" ] || { echo "can't find USB installer image $_f"; usage 1; }
+    done
+    if [ -z "$DFU_UTIL" ] || [ ! -x "$DFU_UTIL" ]; then
+	echo "can't find dfu-util; install it, set DFU_UTIL, or use -f flashloader.bin"
+	usage 1
+    fi
+elif [ ! -f "$FLASHLOADER_BIN" ]; then
    echo "can't find flashloader image $FLASHLOADER_BIN"; usage 1;
 fi
 
@@ -333,6 +433,17 @@ if [ -n "$UIMAGE_IMG" ]; then
     fi
 fi
 
+if [ -n "$USB_INSTALL" ]; then
+    [ -n "$SPL_IMG" ] && [ "$(stat --printf="%s" "$SPL_IMG")" -gt $((QSPI_SPL_SIZE)) ] && \
+	echo "SPL image $SPL_IMG is larger than ${QSPI_SPL_SIZE}" >&2 && exit 1
+    [ -n "$TPL_IMG" ] && [ "$(stat --printf="%s" "$TPL_IMG")" -gt $((QSPI_TPL_SIZE)) ] && \
+	echo "U-Boot image $TPL_IMG is larger than ${QSPI_TPL_SIZE}" >&2 && exit 1
+    [ -n "$UIMAGE_IMG" ] && [ $((QSPI_UIMAGE_SIZE)) -gt $((USB_UIMAGE_ALT_SIZE)) ] && \
+	echo "kernel image $UIMAGE_IMG is larger than ${USB_UIMAGE_ALT_SIZE}" >&2 && exit 1
+    [ -n "$RFS_IMG" ] && [ "$(stat --printf="%s" "$RFS_IMG")" -gt $((QSPI_RFSIMAGE_SIZE)) ] && \
+	echo "rootfs image $RFS_IMG is larger than ${QSPI_RFSIMAGE_SIZE}" >&2 && exit 1
+fi
+
 [ -z "$SPL_IMG" ] && [ -z "$TPL_IMG" ] && [ -z "$UIMAGE_IMG" ] && [ -z "$RFS_IMG" ] && \
     echo "no images specified to install" && usage 1
 
@@ -345,6 +456,9 @@ echo ""
 
 if [ "${_MCU}" = "imxrt1050" ] || [ "${_MCU}" = "imxrt1060" ]; then
     configure_mem_imxrt10xx || exit 1
+elif [ -n "$USB_INSTALL" ]; then
+    install_images_usb || exit 1
+    exit 0
 elif [ "${_MCU}" = "imxrt1170" ]; then
     configure_mem_imxrt1170 || exit 1
 fi
